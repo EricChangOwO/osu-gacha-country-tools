@@ -1,0 +1,113 @@
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.2), transparent 36%),
+    linear-gradient(180deg, #0f172a 0%, #020617 100%);
+  color: #f8fafc;
+  font: 14px/1.45 "Segoe UI", sans-serif;
+}
+
+code {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 12px;
+}
+
+.popup {
+  padding: 16px;
+}
+
+.popup__eyebrow {
+  margin-bottom: 6px;
+  color: #93c5fd;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.popup__title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.popup__subtitle {
+  margin: 8px 0 14px;
+  color: #cbd5e1;
+  font-size: 13px;
+}
+
+.popup__card {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.84);
+  box-shadow: 0 20px 40px rgba(2, 6, 23, 0.35);
+}
+
+.toggle {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  cursor: pointer;
+}
+
+.toggle__title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.toggle__text {
+  margin-top: 4px;
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.toggle__input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggle__switch {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 999px;
+  background: #0f172a;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.toggle__switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #f8fafc;
+  transition: transform 0.2s ease;
+}
+
+.toggle__input:checked + .toggle__switch {
+  border-color: #2563eb;
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.toggle__input:checked + .toggle__switch::after {
+  transform: translateX(20px);
+}
+
+.popup__status {
+  margin: 12px 2px 0;
+  color: #93c5fd;
+  font-size: 12px;
+}

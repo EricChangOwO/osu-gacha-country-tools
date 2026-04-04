@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>osu!gacha Country Tools</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="popup">
+      <div class="popup__eyebrow">osu!gacha Country Tools</div>
+      <h1 class="popup__title">Quick Controls</h1>
+      <p class="popup__subtitle">These toggles apply on <code>gacha.miz.to</code> tabs.</p>
+
+      <section class="popup__card">
+        <label class="toggle">
+          <div class="toggle__copy">
+            <div class="toggle__title">Auto Open Packs</div>
+            <div class="toggle__text">
+              Clicks <code>Open Pack</code> or <code>Open Next Pack</code> every second when available.
+            </div>
+          </div>
+          <input id="autoOpenPacks" class="toggle__input" type="checkbox">
+          <span class="toggle__switch" aria-hidden="true"></span>
+        </label>
+      </section>
+
+      <p id="status" class="popup__status">Loading settings...</p>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

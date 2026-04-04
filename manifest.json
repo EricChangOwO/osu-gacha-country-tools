@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "osu!gacha Country Tools",
+  "version": "0.1.0",
+  "description": "Adds country grouping and collection utilities to gacha.miz.to.",
+  "action": {
+    "default_title": "osu!gacha Country Tools",
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://gacha.miz.to/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://gacha.miz.to/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "page-bridge.js"
+      ],
+      "matches": [
+        "https://gacha.miz.to/*"
+      ]
+    }
+  ]
+}
