@@ -32,6 +32,7 @@
     domObserver: null,
     isApplying: false,
     isLoadingAll: false,
+    autoLoadedCollectionRoot: null,
     autoOpenPackIntervalId: null,
     lastStaleCollectionRefreshAt: 0
   };
@@ -157,6 +158,7 @@
   async function applyEnhancements() {
     const elements = findElements();
     if (!elements) {
+      state.autoLoadedCollectionRoot = null;
       removeToolbar();
       return;
     }
@@ -169,6 +171,7 @@
       mountToolbar(elements);
       syncToolbarOptions(elements);
       decorateGrid(elements);
+      await maybeAutoLoadAllCards(elements);
     } finally {
       state.isApplying = false;
     }
@@ -295,7 +298,6 @@
         '        <option value="name">Name</option>',
         "      </select>",
         "    </label>",
-        '    <button class="ogct-button" type="button" data-kind="primary" data-ogct-control="load-all">Load all cards</button>',
         '    <button class="ogct-button" type="button" data-kind="ghost" data-ogct-control="copy-visible">Copy visible names</button>',
         '    <button class="ogct-button" type="button" data-kind="ghost" data-ogct-control="reload-page">Reload page</button>',
         "  </div>",
@@ -318,7 +320,6 @@
     const groupToggle = root.querySelector('[data-ogct-control="group-toggle"]');
     const countrySelect = root.querySelector('[data-ogct-control="country-select"]');
     const sortSelect = root.querySelector('[data-ogct-control="sort-select"]');
-    const loadAllButton = root.querySelector('[data-ogct-control="load-all"]');
     const copyButton = root.querySelector('[data-ogct-control="copy-visible"]');
     const reloadButton = root.querySelector('[data-ogct-control="reload-page"]');
 
@@ -338,10 +339,6 @@
       state.settings.sortBy = sortSelect.value;
       await saveSettings();
       queueApply();
-    });
-
-    loadAllButton.addEventListener("click", async () => {
-      await loadAllCards();
     });
 
     copyButton.addEventListener("click", async () => {
@@ -398,7 +395,6 @@
 
     renderChips(root, availableCodes, countryCounts);
     renderSummary(root, allItems, countryCounts);
-    updateLoadAllButton(root, elements.collectionRoot, allItems.length);
   }
 
   function renderChips(root, availableCodes, countryCounts) {
@@ -478,47 +474,13 @@
       );
     }
 
+    if (state.isLoadingAll) {
+      notes.push("loading remaining cards for this view...");
+    }
+
     const nextSummaryHtml = notes.join(" · ");
     if (summary.innerHTML !== nextSummaryHtml) {
       summary.innerHTML = nextSummaryHtml;
-    }
-  }
-
-  function updateLoadAllButton(root, collectionRoot, loadedCount) {
-    const button = root.querySelector('[data-ogct-control="load-all"]');
-    if (!button) {
-      return;
-    }
-
-    const hasLoadMore = !!findLoadMoreButton(collectionRoot);
-    let nextText = "";
-    let nextDisabled = false;
-
-    if (state.isLoadingAll) {
-      nextDisabled = true;
-      nextText = "Loading cards...";
-    } else if (!hasLoadMore) {
-      nextDisabled = true;
-      if (state.totalUniquePlayers > loadedCount) {
-        nextText = "Page view fully loaded (" + loadedCount + "/" + state.totalUniquePlayers + " API players)";
-      } else {
-        nextText = "All cards loaded for this view";
-      }
-    } else {
-      nextDisabled = false;
-      if (state.totalUniquePlayers > 0) {
-        nextText = "Load all cards (" + loadedCount + "/" + state.totalUniquePlayers + ")";
-      } else {
-        nextText = "Load all cards";
-      }
-    }
-
-    if (button.disabled !== nextDisabled) {
-      button.disabled = nextDisabled;
-    }
-
-    if (button.textContent !== nextText) {
-      button.textContent = nextText;
     }
   }
 
@@ -668,9 +630,26 @@
     return item.entry && item.entry.countryCode === selectedCountry;
   }
 
-  async function loadAllCards() {
-    const elements = findElements();
-    if (!elements || state.isLoadingAll) {
+  async function maybeAutoLoadAllCards(elements) {
+    if (state.autoLoadedCollectionRoot !== elements.collectionRoot) {
+      state.autoLoadedCollectionRoot = null;
+    }
+
+    if (state.autoLoadedCollectionRoot || state.isLoadingAll) {
+      return;
+    }
+
+    state.autoLoadedCollectionRoot = elements.collectionRoot;
+    if (!findLoadMoreButton(elements.collectionRoot)) {
+      return;
+    }
+
+    await loadAllCards(elements);
+  }
+
+  async function loadAllCards(elements) {
+    const activeElements = elements || findElements();
+    if (!activeElements || state.isLoadingAll) {
       return;
     }
 
@@ -681,17 +660,17 @@
       let safetyCounter = 30;
 
       while (safetyCounter-- > 0) {
-        const button = findLoadMoreButton(elements.collectionRoot);
+        const button = findLoadMoreButton(activeElements.collectionRoot);
         if (!button || button.disabled) {
           break;
         }
 
-        const beforeCount = collectGridItems(elements.grid).length;
+        const beforeCount = collectGridItems(activeElements.grid).length;
         button.click();
 
         await waitFor(() => {
-          const nextButton = findLoadMoreButton(elements.collectionRoot);
-          const afterCount = collectGridItems(elements.grid).length;
+          const nextButton = findLoadMoreButton(activeElements.collectionRoot);
+          const afterCount = collectGridItems(activeElements.grid).length;
           return afterCount > beforeCount || !nextButton || nextButton.disabled;
         }, 3500);
       }

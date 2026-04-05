@@ -41,7 +41,7 @@ The screenshot below shows the collection page grouped by country, with the `TW 
 - Group collection cards by country inside the existing grid
 - Filter loaded cards by country
 - Sort cards by rank, followers, rarity, or name
-- Load all cards for the current collection view
+- Automatically load all cards when the collection page opens
 - Copy currently visible usernames
 - Popup menu with an `Auto Open Packs` toggle
 - Persistent settings via Chrome storage
@@ -109,10 +109,10 @@ For now, the best non-store flow is:
 ### Collection Page
 
 - Use the injected toolbar above the search box.
+- Opening the collection page automatically loads the full current collection view.
 - Toggle `Group by country` to insert country section headers into the existing grid.
 - Pick a country from the dropdown or quick chips.
 - Change sorting with `Rank`, `Followers`, `Rarity`, or `Name`.
-- Click `Load all cards` to fully load the current collection view.
 - Click `Copy visible names` to copy the usernames currently visible on screen.
 
 ### Extension Popup
