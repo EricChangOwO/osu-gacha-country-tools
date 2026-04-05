@@ -240,6 +240,10 @@
     }
 
     if (event.data.type === PROGRESS_TYPE) {
+      if (!state.pendingRequestId || event.data.requestId !== state.pendingRequestId) {
+        return;
+      }
+
       var elements = findElements();
       if (elements) {
         showLoadingProgress(elements, event.data.loaded, event.data.total);
@@ -249,6 +253,13 @@
 
     if (event.data.type !== RESPONSE_TYPE) {
       return;
+    }
+
+    if (state.pendingRequestId && event.data.requestId === state.pendingRequestId) {
+      var responseElements = findElements();
+      if (responseElements) {
+        removeLoadingProgress(responseElements);
+      }
     }
   }
 
