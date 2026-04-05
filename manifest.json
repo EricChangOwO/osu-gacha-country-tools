@@ -11,7 +11,7 @@
   },
   "action": {
     "default_title": "osu!gacha Country Tools",
-    "default_popup": "popup.html",
+    "default_popup": "src/popup/popup.html",
     "default_icon": {
       "16": "assets/icon-16.png",
       "32": "assets/icon-32.png",
@@ -30,10 +30,15 @@
         "https://gacha.miz.to/*"
       ],
       "js": [
-        "content.js"
+        "src/content/utils.js",
+        "src/content/data.js",
+        "src/content/toolbar.js",
+        "src/content/grid.js",
+        "src/content/auto-open.js",
+        "src/content/main.js"
       ],
       "css": [
-        "content.css"
+        "src/content.css"
       ],
       "run_at": "document_idle"
     }
@@ -41,7 +46,7 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "page-bridge.js"
+        "src/bridge/page-bridge.js"
       ],
       "matches": [
         "https://gacha.miz.to/*"
