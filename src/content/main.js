@@ -87,13 +87,13 @@
       return true;
     }
 
-    if (node.matches("button") && /load more/i.test(node.textContent || "")) {
+    if (node.matches("button") && /load more|show next/i.test(node.textContent || "")) {
       return true;
     }
 
     return !!node.querySelector(
       'input[placeholder="Search by name..."], a[href^="https://osu.ppy.sh/users/"], div.grid'
-    ) || !!Array.from(node.querySelectorAll("button")).find((button) => /load more/i.test(button.textContent || ""));
+    ) || !!Array.from(node.querySelectorAll("button")).find((button) => /load more|show next/i.test(button.textContent || ""));
   }
 
   function injectBridge() {
@@ -150,11 +150,11 @@
       return;
     }
 
-    state.autoLoadedCollectionRoot = elements.collectionRoot;
     if (!findLoadMoreButton(elements.collectionRoot)) {
       return;
     }
 
+    state.autoLoadedCollectionRoot = elements.collectionRoot;
     await loadAllCards(elements);
   }
 
@@ -180,9 +180,8 @@
         button.click();
 
         await waitFor(() => {
-          const nextButton = findLoadMoreButton(activeElements.collectionRoot);
           const afterCount = collectGridItems(activeElements.grid).length;
-          return afterCount > beforeCount || !nextButton || nextButton.disabled;
+          return afterCount > beforeCount;
         }, 3500);
       }
     } catch (error) {
@@ -195,7 +194,7 @@
 
   function findLoadMoreButton(collectionRoot) {
     return Array.from(collectionRoot.querySelectorAll("button"))
-      .find((button) => /Load more/i.test(button.textContent || ""));
+      .find((button) => /Load more|Show next/i.test(button.textContent || ""));
   }
 
   function handleBridgeMessage(event) {
