@@ -1,5 +1,5 @@
 (function (OGCT) {
-  const { state, DEFAULT_SETTINGS, SETTINGS_KEY, RESPONSE_TYPE,
+  const { state, DEFAULT_SETTINGS, SETTINGS_KEY, RESPONSE_TYPE, PROGRESS_TYPE, GENERATED_ATTR,
           isGeneratedNode, waitFor, loadSettings, findElements, collectGridItems } = OGCT;
 
   window.addEventListener("message", handleBridgeMessage);
@@ -130,13 +130,16 @@
     state.isApplying = true;
 
     try {
+      showLoadingProgress(elements, 0, 0);
       await OGCT.ensureCollectionData();
       await OGCT.refreshCollectionDataIfStale(elements.grid);
+      removeLoadingProgress(elements);
       OGCT.mountToolbar(elements);
       OGCT.syncToolbarOptions(elements);
       OGCT.decorateGrid(elements);
       await maybeAutoLoadAllCards(elements);
     } finally {
+      removeLoadingProgress(elements);
       state.isApplying = false;
     }
   }
@@ -197,8 +200,54 @@
       .find((button) => /Load more|Show next/i.test(button.textContent || ""));
   }
 
+  function showLoadingProgress(elements, loaded, total) {
+    let bar = elements.toolbarHost.querySelector("[" + GENERATED_ATTR + '="progress"]');
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.setAttribute(GENERATED_ATTR, "progress");
+      bar.className = "ogct-loading-bar";
+
+      var track = document.createElement("div");
+      track.className = "ogct-loading-track";
+      var fill = document.createElement("div");
+      fill.className = "ogct-loading-fill";
+      track.appendChild(fill);
+
+      var text = document.createElement("span");
+      text.className = "ogct-loading-text";
+
+      bar.appendChild(track);
+      bar.appendChild(text);
+      elements.toolbarHost.insertBefore(bar, elements.searchRow);
+    }
+
+    var pct = total > 0 ? Math.round((loaded / total) * 100) : 0;
+    bar.querySelector(".ogct-loading-fill").style.width = pct + "%";
+    bar.querySelector(".ogct-loading-text").textContent =
+      total > 0 ? "Loading collection\u2026 " + loaded + " / " + total : "Loading collection\u2026";
+  }
+
+  function removeLoadingProgress(elements) {
+    var bar = elements.toolbarHost.querySelector("[" + GENERATED_ATTR + '="progress"]');
+    if (bar) {
+      bar.remove();
+    }
+  }
+
   function handleBridgeMessage(event) {
-    if (event.source !== window || !event.data || event.data.type !== RESPONSE_TYPE) {
+    if (event.source !== window || !event.data) {
+      return;
+    }
+
+    if (event.data.type === PROGRESS_TYPE) {
+      var elements = findElements();
+      if (elements) {
+        showLoadingProgress(elements, event.data.loaded, event.data.total);
+      }
+      return;
+    }
+
+    if (event.data.type !== RESPONSE_TYPE) {
       return;
     }
   }

@@ -3,6 +3,7 @@ window.OGCT = (function () {
   const GENERATED_ATTR = "data-ogct-generated";
   const REQUEST_TYPE = "ogct:fetch-collection";
   const RESPONSE_TYPE = "ogct:collection-response";
+  const PROGRESS_TYPE = "ogct:collection-progress";
   const SETTINGS_KEY = "ogct-settings";
   const STALE_COLLECTION_REFRESH_COOLDOWN_MS = 3000;
   const DEFAULT_SETTINGS = {
@@ -206,6 +207,7 @@ window.OGCT = (function () {
     GENERATED_ATTR,
     REQUEST_TYPE,
     RESPONSE_TYPE,
+    PROGRESS_TYPE,
     SETTINGS_KEY,
     STALE_COLLECTION_REFRESH_COOLDOWN_MS,
     DEFAULT_SETTINGS,

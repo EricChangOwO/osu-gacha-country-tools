@@ -1,6 +1,7 @@
 (function () {
   const REQUEST_TYPE = "ogct:fetch-collection";
   const RESPONSE_TYPE = "ogct:collection-response";
+  const PROGRESS_TYPE = "ogct:collection-progress";
 
   if (window.__OGCT_BRIDGE__) {
     return;
@@ -19,6 +20,7 @@
       const allEntries = [];
       let cursor = null;
       let firstPayload = null;
+      let totalMatching = 0;
 
       for (let page = 0; page < 50; page++) {
         const params = new URLSearchParams({ filter: "all" });
@@ -40,10 +42,18 @@
 
         if (!firstPayload) {
           firstPayload = payload;
+          totalMatching = payload.totalMatching || 0;
         }
 
         const entries = Array.isArray(payload.entries) ? payload.entries : [];
         allEntries.push(...entries);
+
+        window.postMessage({
+          type: PROGRESS_TYPE,
+          requestId,
+          loaded: allEntries.length,
+          total: totalMatching
+        }, "*");
 
         if (!payload.nextCursor || entries.length === 0) {
           break;

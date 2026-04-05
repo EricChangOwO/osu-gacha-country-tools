@@ -166,6 +166,40 @@
   font-size: 13px;
 }
 
+.ogct-loading-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border: 1px solid #1f2937;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(17, 24, 39, 0.96) 0%, rgba(10, 15, 26, 0.98) 100%);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+}
+
+.ogct-loading-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: #1f2937;
+  overflow: hidden;
+}
+
+.ogct-loading-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+  transition: width 0.2s ease;
+}
+
+.ogct-loading-text {
+  font-size: 12px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
 .ogct-hidden {
   display: none !important;
 }
