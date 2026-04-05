@@ -4,6 +4,7 @@
   const REQUEST_TYPE = "ogct:fetch-collection";
   const RESPONSE_TYPE = "ogct:collection-response";
   const SETTINGS_KEY = "ogct-settings";
+  const STALE_COLLECTION_REFRESH_COOLDOWN_MS = 3000;
   const DEFAULT_SETTINGS = {
     groupByCountry: true,
     selectedCountry: "ALL",
@@ -31,7 +32,8 @@
     domObserver: null,
     isApplying: false,
     isLoadingAll: false,
-    autoOpenPackIntervalId: null
+    autoOpenPackIntervalId: null,
+    lastStaleCollectionRefreshAt: 0
   };
 
   const regionNames = typeof Intl.DisplayNames === "function"
@@ -163,6 +165,7 @@
 
     try {
       await ensureCollectionData();
+      await refreshCollectionDataIfStale(elements.grid);
       mountToolbar(elements);
       syncToolbarOptions(elements);
       decorateGrid(elements);
@@ -243,6 +246,21 @@
     state.apiCountryCounts = countCountries(
       Array.from(state.entriesByUserId.values()).map((entry) => ({ entry }))
     );
+  }
+
+  async function refreshCollectionDataIfStale(grid) {
+    const missingUserIds = getMissingCollectionUserIds(grid);
+    if (missingUserIds.length === 0) {
+      return;
+    }
+
+    const now = Date.now();
+    if (now - state.lastStaleCollectionRefreshAt < STALE_COLLECTION_REFRESH_COOLDOWN_MS) {
+      return;
+    }
+
+    state.lastStaleCollectionRefreshAt = now;
+    await ensureCollectionData(true);
   }
 
   function handleBridgeMessage(event) {
@@ -624,6 +642,14 @@
           username
         };
       });
+  }
+
+  function getMissingCollectionUserIds(grid) {
+    return Array.from(new Set(
+      collectGridItems(grid)
+        .map((item) => item.userId)
+        .filter((userId) => userId && !state.entriesByUserId.has(userId))
+    ));
   }
 
   function countCountries(items) {
