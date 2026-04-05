@@ -40,7 +40,10 @@
       ? response.payload.entries
       : [];
 
-    state.entriesByUserId = new Map(entries.map((entry) => [String(entry.id), entry]));
+    state.entriesByUserId = new Map(entries.map((entry) => {
+      const normalized = entry.card ? { ...entry.card, count: entry.count, shinyCount: entry.shinyCount } : entry;
+      return [String(normalized.id), normalized];
+    }));
     state.totalInstances = entries.length;
     state.totalUniquePlayers = state.entriesByUserId.size;
     state.apiCountryCounts = countCountries(
