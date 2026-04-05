@@ -139,9 +139,9 @@ For now, the best non-store flow is:
 
 ## License
 
-No license file has been added yet.
+This project is released under the WTFPL (`Do What The Fuck You Want To Public License`).
 
-If you plan to publish this repository publicly on GitHub, add a license before sharing it broadly.
+You can do whatever you want with it. See [LICENSE](LICENSE) for the full text.
 
 ## Acknowledgments
 
