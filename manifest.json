@@ -1,11 +1,22 @@
 {
   "manifest_version": 3,
   "name": "osu!gacha Country Tools",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Adds country grouping and collection utilities to gacha.miz.to.",
+  "icons": {
+    "16": "assets/icon-16.png",
+    "32": "assets/icon-32.png",
+    "48": "assets/icon-48.png",
+    "128": "assets/icon-128.png"
+  },
   "action": {
     "default_title": "osu!gacha Country Tools",
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icon-16.png",
+      "32": "assets/icon-32.png",
+      "48": "assets/icon-48.png"
+    }
   },
   "permissions": [
     "storage"
