@@ -299,7 +299,6 @@
         "      </select>",
         "    </label>",
         '    <button class="ogct-button" type="button" data-kind="ghost" data-ogct-control="copy-visible">Copy visible names</button>',
-        '    <button class="ogct-button" type="button" data-kind="ghost" data-ogct-control="reload-page">Reload page</button>',
         "  </div>",
         '  <div class="ogct-row ogct-summary" data-ogct-control="summary"></div>',
         '  <div class="ogct-row ogct-chip-list" data-ogct-control="chip-list"></div>',
@@ -321,7 +320,6 @@
     const countrySelect = root.querySelector('[data-ogct-control="country-select"]');
     const sortSelect = root.querySelector('[data-ogct-control="sort-select"]');
     const copyButton = root.querySelector('[data-ogct-control="copy-visible"]');
-    const reloadButton = root.querySelector('[data-ogct-control="reload-page"]');
 
     groupToggle.addEventListener("change", async () => {
       state.settings.groupByCountry = groupToggle.checked;
@@ -343,10 +341,6 @@
 
     copyButton.addEventListener("click", async () => {
       await copyVisibleNames();
-    });
-
-    reloadButton.addEventListener("click", () => {
-      window.location.reload();
     });
   }
 
