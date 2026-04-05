@@ -62,10 +62,8 @@
         return;
       }
 
-      const hasRelevantChange = mutations.some((mutation) => {
-        const nodes = [...mutation.addedNodes, ...mutation.removedNodes];
-        return nodes.some((node) => !isGeneratedNode(node));
-      });
+      const collectionRoot = document.getElementById("tabs-content-collection");
+      const hasRelevantChange = mutations.some((mutation) => isRelevantMutation(mutation, collectionRoot));
 
       if (hasRelevantChange) {
         queueApply();
@@ -76,6 +74,59 @@
       childList: true,
       subtree: true
     });
+  }
+
+  function isRelevantMutation(mutation, collectionRoot) {
+    const changedNodes = [...mutation.addedNodes, ...mutation.removedNodes];
+
+    if (!collectionRoot) {
+      return changedNodes.some((node) => containsCollectionRoot(node) || isCollectionStructureNode(node));
+    }
+
+    const target = mutation.target instanceof HTMLElement ? mutation.target : null;
+    const touchesCollection = (
+      target && collectionRoot.contains(target)
+    ) || changedNodes.some((node) => isNodeInside(node, collectionRoot) || containsCollectionRoot(node));
+
+    if (!touchesCollection) {
+      return false;
+    }
+
+    return changedNodes.some((node) => isCollectionStructureNode(node));
+  }
+
+  function containsCollectionRoot(node) {
+    if (!(node instanceof HTMLElement)) {
+      return false;
+    }
+
+    return node.id === "tabs-content-collection" || !!node.querySelector("#tabs-content-collection");
+  }
+
+  function isNodeInside(node, container) {
+    return node instanceof HTMLElement && container.contains(node);
+  }
+
+  function isCollectionStructureNode(node) {
+    if (!(node instanceof HTMLElement) || isGeneratedNode(node)) {
+      return false;
+    }
+
+    if (
+      node.matches('input[placeholder="Search by name..."]') ||
+      node.matches('a[href^="https://osu.ppy.sh/users/"]') ||
+      node.matches('div.grid')
+    ) {
+      return true;
+    }
+
+    if (node.matches("button") && /load more/i.test(node.textContent || "")) {
+      return true;
+    }
+
+    return !!node.querySelector(
+      'input[placeholder="Search by name..."], a[href^="https://osu.ppy.sh/users/"], div.grid'
+    ) || !!Array.from(node.querySelectorAll("button")).find((button) => /load more/i.test(button.textContent || ""));
   }
 
   function injectBridge() {
@@ -334,24 +385,33 @@
 
   function renderChips(root, availableCodes, countryCounts) {
     const chipList = root.querySelector('[data-ogct-control="chip-list"]');
-    chipList.replaceChildren();
+    const chipStates = [{
+      code: "ALL",
+      label: "All",
+      active: state.settings.selectedCountry === "ALL"
+    }].concat(
+      availableCodes.slice(0, 12).map((code) => ({
+        code,
+        label: code + " " + (countryCounts.get(code) || 0),
+        active: state.settings.selectedCountry === code
+      }))
+    );
+    const nextSignature = JSON.stringify(chipStates);
 
-    const allChip = createChip("All", "ALL");
-    allChip.classList.toggle("is-active", state.settings.selectedCountry === "ALL");
-    chipList.appendChild(allChip);
+    if (chipList.dataset.signature === nextSignature) {
+      return;
+    }
 
-    availableCodes.slice(0, 12).forEach((code) => {
-      const chip = createChip(code + " " + (countryCounts.get(code) || 0), code);
-      chip.classList.toggle("is-active", state.settings.selectedCountry === code);
-      chipList.appendChild(chip);
-    });
+    chipList.replaceChildren(...chipStates.map((chipState) => createChip(chipState)));
+    chipList.dataset.signature = nextSignature;
   }
 
-  function createChip(label, code) {
+  function createChip({ label, code, active }) {
     const chip = document.createElement("button");
     chip.type = "button";
     chip.className = "ogct-chip";
     chip.textContent = label;
+    chip.classList.toggle("is-active", active);
     chip.addEventListener("click", async () => {
       state.settings.selectedCountry = code;
       await saveSettings();
@@ -400,7 +460,10 @@
       );
     }
 
-    summary.innerHTML = notes.join(" · ");
+    const nextSummaryHtml = notes.join(" · ");
+    if (summary.innerHTML !== nextSummaryHtml) {
+      summary.innerHTML = nextSummaryHtml;
+    }
   }
 
   function updateLoadAllButton(root, collectionRoot, loadedCount) {
@@ -410,28 +473,34 @@
     }
 
     const hasLoadMore = !!findLoadMoreButton(collectionRoot);
+    let nextText = "";
+    let nextDisabled = false;
 
     if (state.isLoadingAll) {
-      button.disabled = true;
-      button.textContent = "Loading cards...";
-      return;
-    }
-
-    if (!hasLoadMore) {
-      button.disabled = true;
+      nextDisabled = true;
+      nextText = "Loading cards...";
+    } else if (!hasLoadMore) {
+      nextDisabled = true;
       if (state.totalUniquePlayers > loadedCount) {
-        button.textContent = "Page view fully loaded (" + loadedCount + "/" + state.totalUniquePlayers + " API players)";
+        nextText = "Page view fully loaded (" + loadedCount + "/" + state.totalUniquePlayers + " API players)";
       } else {
-        button.textContent = "All cards loaded for this view";
+        nextText = "All cards loaded for this view";
       }
-      return;
+    } else {
+      nextDisabled = false;
+      if (state.totalUniquePlayers > 0) {
+        nextText = "Load all cards (" + loadedCount + "/" + state.totalUniquePlayers + ")";
+      } else {
+        nextText = "Load all cards";
+      }
     }
 
-    button.disabled = false;
-    if (state.totalUniquePlayers > 0) {
-      button.textContent = "Load all cards (" + loadedCount + "/" + state.totalUniquePlayers + ")";
-    } else {
-      button.textContent = "Load all cards";
+    if (button.disabled !== nextDisabled) {
+      button.disabled = nextDisabled;
+    }
+
+    if (button.textContent !== nextText) {
+      button.textContent = nextText;
     }
   }
 

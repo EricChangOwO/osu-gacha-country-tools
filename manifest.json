@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "osu!gacha Country Tools",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Adds country grouping and collection utilities to gacha.miz.to.",
   "action": {
     "default_title": "osu!gacha Country Tools",
