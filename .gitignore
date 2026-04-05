@@ -1,3 +1,4 @@
 .codex/
 .playwright-mcp/
 tw-layout*.png
+.DS_Store
