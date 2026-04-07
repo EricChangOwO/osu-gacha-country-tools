@@ -16,7 +16,7 @@
           state.pendingRequestId = null;
         }
         reject(new Error("Timed out waiting for collection data"));
-      }, 30000);
+      }, 83000);
 
       const listener = (event) => {
         if (event.source !== window || !event.data || event.data.type !== RESPONSE_TYPE || event.data.requestId !== requestId) {
