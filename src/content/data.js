@@ -12,14 +12,16 @@
     state.pendingRequestId = requestId;
 
     const response = await new Promise((resolve, reject) => {
+      let listener;
       const timeoutId = window.setTimeout(() => {
+        window.removeEventListener("message", listener);
         if (state.pendingRequestId === requestId) {
           state.pendingRequestId = null;
         }
         reject(new Error("Timed out waiting for collection data"));
       }, 90000);
 
-      const listener = (event) => {
+      listener = (event) => {
         if (event.source !== window || !event.data || event.data.type !== RESPONSE_TYPE || event.data.requestId !== requestId) {
           return;
         }
@@ -106,11 +108,13 @@
 
     const requestId = "delete-" + Date.now() + "-" + Math.random().toString(36).slice(2);
     const response = await new Promise((resolve, reject) => {
+      let listener;
       const timeoutId = window.setTimeout(() => {
+        window.removeEventListener("message", listener);
         reject(new Error("Timed out waiting for delete response"));
       }, 30000);
 
-      const listener = (event) => {
+      listener = (event) => {
         if (event.source !== window || !event.data || event.data.type !== DELETE_RESPONSE_TYPE || event.data.requestId !== requestId) {
           return;
         }
@@ -141,7 +145,154 @@
     };
   }
 
+  function fetchCollectionEntries(filter) {
+    var requestId = "req-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+    return new Promise(function (resolve, reject) {
+      var listener;
+      var timeoutId = window.setTimeout(function () {
+        window.removeEventListener("message", listener);
+        reject(new Error("Timed out waiting for " + filter + " collection data"));
+      }, 90000);
+
+      listener = function (event) {
+        if (event.source !== window || !event.data || event.data.type !== RESPONSE_TYPE || event.data.requestId !== requestId) {
+          return;
+        }
+        window.removeEventListener("message", listener);
+        window.clearTimeout(timeoutId);
+        resolve(event.data);
+      };
+
+      window.addEventListener("message", listener);
+      window.postMessage({ type: REQUEST_TYPE, requestId: requestId, filter: filter }, "*");
+    });
+  }
+
+  async function autoCleanCollection() {
+    var AUTO_CLEAN_COOLDOWN_MS = 60000;
+
+    if (state.isAutoCleanRunning || Date.now() - state.lastAutoCleanAt < AUTO_CLEAN_COOLDOWN_MS) {
+      return null;
+    }
+
+    state.isAutoCleanRunning = true;
+
+    try {
+      var allResponse = await fetchCollectionEntries("all");
+      if (!allResponse.ok) {
+        throw new Error(allResponse.error || "Failed to fetch collection");
+      }
+
+      var favResponse = await fetchCollectionEntries("favorites");
+      if (!favResponse.ok) {
+        throw new Error(favResponse.error || "Failed to fetch favorites");
+      }
+
+      var allEntries = Array.isArray(allResponse.payload && allResponse.payload.entries)
+        ? allResponse.payload.entries
+        : [];
+      var favEntries = Array.isArray(favResponse.payload && favResponse.payload.entries)
+        ? favResponse.payload.entries
+        : [];
+
+      var favIds = new Set(favEntries.map(function (e) {
+        return Number(e.card ? e.card.id : e.id);
+      }));
+
+      var deleteTargets = [];
+
+      // Priority 1: non-favorite duplicate normal cards (keep 1)
+      allEntries.forEach(function (entry) {
+        var card = entry.card || entry;
+        var playerId = Number(card.id);
+        var normalCount = Number(entry.count) || 0;
+        if (!playerId || normalCount <= 1 || favIds.has(playerId)) {
+          return;
+        }
+        deleteTargets.push({
+          playerId: playerId,
+          isShiny: false,
+          isSigned: false,
+          quantity: normalCount - 1
+        });
+      });
+
+      // Priority 2: non-favorite common cards (delete entirely)
+      allEntries.forEach(function (entry) {
+        var card = entry.card || entry;
+        var playerId = Number(card.id);
+        var rarity = card.rarity || "common";
+        var normalCount = Number(entry.count) || 0;
+        if (!playerId || rarity !== "common" || normalCount <= 0 || favIds.has(playerId)) {
+          return;
+        }
+        // If already targeted as duplicate, remaining count is 1 — delete that too
+        var existing = deleteTargets.find(function (t) { return t.playerId === playerId; });
+        var remainingCount = existing ? normalCount - existing.quantity : normalCount;
+        if (remainingCount <= 0) {
+          return;
+        }
+        if (existing) {
+          existing.quantity += remainingCount;
+        } else {
+          deleteTargets.push({
+            playerId: playerId,
+            isShiny: false,
+            isSigned: false,
+            quantity: remainingCount
+          });
+        }
+      });
+
+      if (deleteTargets.length === 0) {
+        state.lastAutoCleanAt = Date.now();
+        return { deletedCards: 0, deleteTargets: [] };
+      }
+
+      var totalDeleted = deleteTargets.reduce(function (sum, t) { return sum + t.quantity; }, 0);
+
+      var deleteRequestId = "delete-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+      var deleteResponse = await new Promise(function (resolve, reject) {
+        var deleteListener;
+        var timeoutId = window.setTimeout(function () {
+          window.removeEventListener("message", deleteListener);
+          reject(new Error("Timed out waiting for delete response"));
+        }, 30000);
+
+        deleteListener = function (event) {
+          if (event.source !== window || !event.data || event.data.type !== DELETE_RESPONSE_TYPE || event.data.requestId !== deleteRequestId) {
+            return;
+          }
+          window.removeEventListener("message", deleteListener);
+          window.clearTimeout(timeoutId);
+          resolve(event.data);
+        };
+
+        window.addEventListener("message", deleteListener);
+        window.postMessage({ type: DELETE_REQUEST_TYPE, requestId: deleteRequestId, deleteTargets: deleteTargets }, "*");
+      });
+
+      if (!deleteResponse.ok) {
+        throw new Error(deleteResponse.error || "Auto-clean delete failed");
+      }
+
+      state.lastAutoCleanAt = Date.now();
+
+      // Invalidate cached collection data
+      state.entriesByUserId = new Map();
+      state.totalInstances = 0;
+      state.totalUniquePlayers = 0;
+      state.apiCountryCounts = new Map();
+      state.lastStaleCollectionRefreshAt = 0;
+
+      return { deletedCards: totalDeleted, deleteTargets: deleteTargets };
+    } finally {
+      state.isAutoCleanRunning = false;
+    }
+  }
+
   OGCT.ensureCollectionData = ensureCollectionData;
   OGCT.refreshCollectionDataIfStale = refreshCollectionDataIfStale;
   OGCT.deleteDuplicateNormalCards = deleteDuplicateNormalCards;
+  OGCT.autoCleanCollection = autoCleanCollection;
 })(window.OGCT);

@@ -13,7 +13,8 @@ window.OGCT = (function () {
     groupByCountry: true,
     selectedCountry: "ALL",
     sortBy: "rank",
-    autoOpenPacks: false
+    autoOpenPacks: false,
+    autoCleanCollection: false
   };
   const RARITY_ORDER = {
     mythic: 0,
@@ -39,7 +40,10 @@ window.OGCT = (function () {
     isDeletingDuplicates: false,
     autoLoadedCollectionRoot: null,
     autoOpenPackIntervalId: null,
-    lastStaleCollectionRefreshAt: 0
+    lastStaleCollectionRefreshAt: 0,
+    lastAutoCleanAt: 0,
+    isAutoCleanRunning: false,
+    pendingAutoCleanTimerId: null
   };
 
   const regionNames = typeof Intl.DisplayNames === "function"

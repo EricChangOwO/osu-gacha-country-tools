@@ -25,8 +25,10 @@
         let firstPayload = null;
         let totalMatching = 0;
 
+        const filter = event.data.filter || "all";
+
         for (let page = 0; page < 50; page++) {
-          const params = new URLSearchParams({ filter: "all" });
+          const params = new URLSearchParams({ filter });
           if (cursor) {
             params.set("cursorPlayerId", cursor.playerId);
             params.set("cursorSortRank", cursor.sortRank);

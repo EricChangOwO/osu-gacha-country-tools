@@ -19,11 +19,29 @@
       const clicked = tryClickOpenPack();
       if (clicked) {
         console.log("[ogct] Opened pack at", new Date().toLocaleTimeString());
+        if (state.settings.autoCleanCollection) {
+          window.clearTimeout(state.pendingAutoCleanTimerId);
+          state.pendingAutoCleanTimerId = window.setTimeout(maybeAutoClean, 3000);
+        }
       }
     };
 
     tick();
     state.autoOpenPackIntervalId = window.setInterval(tick, 1000);
+  }
+
+  function maybeAutoClean() {
+    if (!state.settings.autoCleanCollection || !state.settings.autoOpenPacks) {
+      return;
+    }
+    OGCT.autoCleanCollection().then(function (result) {
+      if (!result || result.deletedCards === 0) {
+        return;
+      }
+      console.log("[ogct] Auto-cleaned " + result.deletedCards + " card(s) (" + result.deleteTargets.length + " players)");
+    }).catch(function (error) {
+      console.error("[ogct] Auto-clean failed", error);
+    });
   }
 
   function stopAutoOpenPacks() {
@@ -33,6 +51,8 @@
 
     window.clearInterval(state.autoOpenPackIntervalId);
     state.autoOpenPackIntervalId = null;
+    window.clearTimeout(state.pendingAutoCleanTimerId);
+    state.pendingAutoCleanTimerId = null;
   }
 
   function tryClickOpenPack() {

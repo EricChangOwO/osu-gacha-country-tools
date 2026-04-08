@@ -4,11 +4,13 @@ const DEFAULT_SETTINGS = {
   groupByCountry: true,
   selectedCountry: "ALL",
   sortBy: "rank",
-  autoOpenPacks: false
+  autoOpenPacks: false,
+  autoCleanCollection: false
 };
 
 const collectionToolsEnabledInput = document.getElementById("collectionToolsEnabled");
 const autoOpenPacksInput = document.getElementById("autoOpenPacks");
+const autoCleanCollectionInput = document.getElementById("autoCleanCollection");
 const statusElement = document.getElementById("status");
 
 initialize().catch((error) => {
@@ -20,6 +22,7 @@ async function initialize() {
   const settings = await loadSettings();
   collectionToolsEnabledInput.checked = settings.collectionToolsEnabled;
   autoOpenPacksInput.checked = settings.autoOpenPacks;
+  autoCleanCollectionInput.checked = settings.autoCleanCollection;
   renderStatus(settings);
 
   collectionToolsEnabledInput.addEventListener("change", async () => {
@@ -47,6 +50,20 @@ async function initialize() {
     });
 
     settings.autoOpenPacks = nextSettings.autoOpenPacks;
+    renderStatus(settings);
+  });
+
+  autoCleanCollectionInput.addEventListener("change", async () => {
+    const nextSettings = {
+      ...settings,
+      autoCleanCollection: autoCleanCollectionInput.checked
+    };
+
+    await chrome.storage.local.set({
+      [SETTINGS_KEY]: nextSettings
+    });
+
+    settings.autoCleanCollection = nextSettings.autoCleanCollection;
     renderStatus(settings);
   });
 }
