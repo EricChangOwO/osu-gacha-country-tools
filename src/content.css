@@ -89,6 +89,17 @@
   color: #cbd5e1;
 }
 
+.ogct-button[data-kind="danger"] {
+  border-color: #7f1d1d;
+  background: linear-gradient(180deg, #4c1014 0%, #2f0b0d 100%);
+  color: #fecaca;
+}
+
+.ogct-button[data-kind="danger"]:hover:not(:disabled) {
+  border-color: #f87171;
+  background: linear-gradient(180deg, #5e151b 0%, #3b0f12 100%);
+}
+
 .ogct-summary {
   font-size: 13px;
   line-height: 1.45;

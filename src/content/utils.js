@@ -4,6 +4,8 @@ window.OGCT = (function () {
   const REQUEST_TYPE = "ogct:fetch-collection";
   const RESPONSE_TYPE = "ogct:collection-response";
   const PROGRESS_TYPE = "ogct:collection-progress";
+  const DELETE_REQUEST_TYPE = "ogct:delete-collection";
+  const DELETE_RESPONSE_TYPE = "ogct:delete-collection-response";
   const SETTINGS_KEY = "ogct-settings";
   const STALE_COLLECTION_REFRESH_COOLDOWN_MS = 3000;
   const DEFAULT_SETTINGS = {
@@ -34,6 +36,7 @@ window.OGCT = (function () {
     domObserver: null,
     isApplying: false,
     isLoadingAll: false,
+    isDeletingDuplicates: false,
     autoLoadedCollectionRoot: null,
     autoOpenPackIntervalId: null,
     lastStaleCollectionRefreshAt: 0
@@ -209,6 +212,8 @@ window.OGCT = (function () {
     REQUEST_TYPE,
     RESPONSE_TYPE,
     PROGRESS_TYPE,
+    DELETE_REQUEST_TYPE,
+    DELETE_RESPONSE_TYPE,
     SETTINGS_KEY,
     STALE_COLLECTION_REFRESH_COOLDOWN_MS,
     DEFAULT_SETTINGS,

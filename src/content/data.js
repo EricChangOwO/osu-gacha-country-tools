@@ -1,5 +1,6 @@
 (function (OGCT) {
-  const { state, REQUEST_TYPE, RESPONSE_TYPE, countCountries, getMissingCollectionUserIds,
+  const { state, REQUEST_TYPE, RESPONSE_TYPE, DELETE_REQUEST_TYPE, DELETE_RESPONSE_TYPE,
+          countCountries, getMissingCollectionUserIds,
           STALE_COLLECTION_REFRESH_COOLDOWN_MS } = OGCT;
 
   async function ensureCollectionData(force) {
@@ -69,6 +70,78 @@
     await ensureCollectionData(true);
   }
 
+  async function deleteDuplicateNormalCards() {
+    await ensureCollectionData();
+
+    const deleteTargets = [];
+    let deletedCards = 0;
+    let affectedPlayers = 0;
+
+    state.entriesByUserId.forEach((entry) => {
+      const playerId = Number(entry && entry.id);
+      const normalCount = Number(entry && entry.count) || 0;
+      const duplicateCount = normalCount - 1;
+
+      if (!playerId || duplicateCount <= 0) {
+        return;
+      }
+
+      deleteTargets.push({
+        playerId,
+        isShiny: false,
+        isSigned: false,
+        quantity: duplicateCount
+      });
+      deletedCards += duplicateCount;
+      affectedPlayers += 1;
+    });
+
+    if (deleteTargets.length === 0) {
+      return {
+        deleteTargets,
+        deletedCards: 0,
+        affectedPlayers: 0
+      };
+    }
+
+    const requestId = "delete-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+    const response = await new Promise((resolve, reject) => {
+      const timeoutId = window.setTimeout(() => {
+        reject(new Error("Timed out waiting for delete response"));
+      }, 30000);
+
+      const listener = (event) => {
+        if (event.source !== window || !event.data || event.data.type !== DELETE_RESPONSE_TYPE || event.data.requestId !== requestId) {
+          return;
+        }
+
+        window.removeEventListener("message", listener);
+        window.clearTimeout(timeoutId);
+        resolve(event.data);
+      };
+
+      window.addEventListener("message", listener);
+      window.postMessage({ type: DELETE_REQUEST_TYPE, requestId, deleteTargets }, "*");
+    });
+
+    if (!response.ok) {
+      throw new Error(response.error || "Delete request failed");
+    }
+
+    state.entriesByUserId = new Map();
+    state.totalInstances = 0;
+    state.totalUniquePlayers = 0;
+    state.apiCountryCounts = new Map();
+    state.lastStaleCollectionRefreshAt = 0;
+
+    return {
+      deleteTargets,
+      deletedCards,
+      affectedPlayers
+    };
+  }
+
   OGCT.ensureCollectionData = ensureCollectionData;
   OGCT.refreshCollectionDataIfStale = refreshCollectionDataIfStale;
+  OGCT.deleteDuplicateNormalCards = deleteDuplicateNormalCards;
 })(window.OGCT);
