@@ -1,6 +1,7 @@
 (function (OGCT) {
   const { state, DEFAULT_SETTINGS, SETTINGS_KEY, RESPONSE_TYPE, PROGRESS_TYPE, GENERATED_ATTR,
-          isGeneratedNode, waitFor, loadSettings, findElements, collectGridItems } = OGCT;
+          isGeneratedNode, waitFor, loadSettings, findElements, collectGridItems,
+          clearGeneratedNodes } = OGCT;
 
   window.addEventListener("message", handleBridgeMessage);
   chrome.storage.onChanged.addListener(handleStorageChange);
@@ -127,6 +128,11 @@
       return;
     }
 
+    if (!state.settings.collectionToolsEnabled) {
+      resetCollectionEnhancements(elements);
+      return;
+    }
+
     state.isApplying = true;
 
     try {
@@ -198,6 +204,19 @@
   function findLoadMoreButton(collectionRoot) {
     return Array.from(collectionRoot.querySelectorAll("button"))
       .find((button) => /Load more|Show next/i.test(button.textContent || ""));
+  }
+
+  function resetCollectionEnhancements(elements) {
+    removeLoadingProgress(elements);
+    OGCT.removeToolbar();
+    clearGeneratedNodes(elements.grid);
+
+    collectGridItems(elements.grid).forEach((item) => {
+      item.wrapper.classList.remove("ogct-hidden", "ogct-card-visible");
+      item.wrapper.style.order = "";
+    });
+
+    state.autoLoadedCollectionRoot = null;
   }
 
   function showLoadingProgress(elements, loaded, total) {

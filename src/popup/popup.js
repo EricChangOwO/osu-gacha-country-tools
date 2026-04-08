@@ -1,11 +1,13 @@
 const SETTINGS_KEY = "ogct-settings";
 const DEFAULT_SETTINGS = {
+  collectionToolsEnabled: true,
   groupByCountry: true,
   selectedCountry: "ALL",
   sortBy: "rank",
   autoOpenPacks: false
 };
 
+const collectionToolsEnabledInput = document.getElementById("collectionToolsEnabled");
 const autoOpenPacksInput = document.getElementById("autoOpenPacks");
 const statusElement = document.getElementById("status");
 
@@ -16,8 +18,23 @@ initialize().catch((error) => {
 
 async function initialize() {
   const settings = await loadSettings();
+  collectionToolsEnabledInput.checked = settings.collectionToolsEnabled;
   autoOpenPacksInput.checked = settings.autoOpenPacks;
-  setStatus(settings.autoOpenPacks ? "Auto Open Packs is enabled." : "Auto Open Packs is disabled.");
+  renderStatus(settings);
+
+  collectionToolsEnabledInput.addEventListener("change", async () => {
+    const nextSettings = {
+      ...settings,
+      collectionToolsEnabled: collectionToolsEnabledInput.checked
+    };
+
+    await chrome.storage.local.set({
+      [SETTINGS_KEY]: nextSettings
+    });
+
+    settings.collectionToolsEnabled = nextSettings.collectionToolsEnabled;
+    renderStatus(settings);
+  });
 
   autoOpenPacksInput.addEventListener("change", async () => {
     const nextSettings = {
@@ -30,7 +47,7 @@ async function initialize() {
     });
 
     settings.autoOpenPacks = nextSettings.autoOpenPacks;
-    setStatus(settings.autoOpenPacks ? "Auto Open Packs is enabled." : "Auto Open Packs is disabled.");
+    renderStatus(settings);
   });
 }
 
@@ -44,4 +61,18 @@ async function loadSettings() {
 
 function setStatus(message) {
   statusElement.textContent = message;
+}
+
+function renderStatus(settings) {
+  if (!settings.collectionToolsEnabled && settings.autoOpenPacks) {
+    setStatus("Collection tools are disabled. Auto Open Packs stays enabled.");
+    return;
+  }
+
+  if (!settings.collectionToolsEnabled) {
+    setStatus("Collection tools are disabled.");
+    return;
+  }
+
+  setStatus(settings.autoOpenPacks ? "Collection tools and Auto Open Packs are enabled." : "Collection tools are enabled.");
 }
