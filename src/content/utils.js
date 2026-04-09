@@ -113,17 +113,35 @@ window.OGCT = (function () {
     });
   }
 
+  function isContextInvalidatedError(error) {
+    return !!(error && typeof error.message === "string" && /Extension context invalidated/i.test(error.message));
+  }
+
+  function handleSettingsStorageError(action, error) {
+    if (isContextInvalidatedError(error)) {
+      console.debug("[ogct] Skipped settings " + action + " after extension context invalidated");
+      return;
+    }
+
+    console.warn("[ogct] Failed to " + action + " settings", error);
+  }
+
   async function loadSettings() {
     const storage = typeof chrome !== "undefined" && chrome.storage && chrome.storage.local;
     if (!storage) {
       return { ...DEFAULT_SETTINGS };
     }
 
-    const result = await storage.get(SETTINGS_KEY);
-    return {
-      ...DEFAULT_SETTINGS,
-      ...(result[SETTINGS_KEY] || {})
-    };
+    try {
+      const result = await storage.get(SETTINGS_KEY);
+      return {
+        ...DEFAULT_SETTINGS,
+        ...(result[SETTINGS_KEY] || {})
+      };
+    } catch (error) {
+      handleSettingsStorageError("load", error);
+      return { ...DEFAULT_SETTINGS };
+    }
   }
 
   async function saveSettings() {
@@ -132,9 +150,13 @@ window.OGCT = (function () {
       return;
     }
 
-    await storage.set({
-      [SETTINGS_KEY]: state.settings
-    });
+    try {
+      await storage.set({
+        [SETTINGS_KEY]: state.settings
+      });
+    } catch (error) {
+      handleSettingsStorageError("save", error);
+    }
   }
 
   function findElements() {
