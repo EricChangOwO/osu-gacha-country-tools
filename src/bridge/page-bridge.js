@@ -4,12 +4,35 @@
   const PROGRESS_TYPE = "ogct:collection-progress";
   const DELETE_REQUEST_TYPE = "ogct:delete-collection";
   const DELETE_RESPONSE_TYPE = "ogct:delete-collection-response";
+  const COLLECTION_FULL_TYPE = "ogct:collection-full";
+  const PACK_OPENED_TYPE = "ogct:pack-opened";
 
   if (window.__OGCT_BRIDGE__) {
     return;
   }
 
   window.__OGCT_BRIDGE__ = true;
+
+  // Intercept fetch to detect collection_full from /api/packs/open
+  const originalFetch = window.fetch;
+  window.fetch = async function (...args) {
+    const response = await originalFetch.apply(this, args);
+    const url = typeof args[0] === "string" ? args[0] : (args[0] && args[0].url) || "";
+    if (url.includes("/api/packs/open")) {
+      if (response.ok) {
+        window.postMessage({ type: PACK_OPENED_TYPE }, "*");
+      } else {
+        try {
+          const cloned = response.clone();
+          const body = await cloned.json();
+          if (body && body.error === "collection_full") {
+            window.postMessage({ type: COLLECTION_FULL_TYPE }, "*");
+          }
+        } catch (_) {}
+      }
+    }
+    return response;
+  };
 
   window.addEventListener("message", async (event) => {
     if (event.source !== window || !event.data) {

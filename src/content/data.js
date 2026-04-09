@@ -169,9 +169,9 @@
   }
 
   async function autoCleanCollection() {
-    var AUTO_CLEAN_COOLDOWN_MS = 60000;
+    var BATCH_SIZE = 10;
 
-    if (state.isAutoCleanRunning || Date.now() - state.lastAutoCleanAt < AUTO_CLEAN_COOLDOWN_MS) {
+    if (state.isAutoCleanRunning) {
       return null;
     }
 
@@ -199,25 +199,8 @@
         return Number(e.card ? e.card.id : e.id);
       }));
 
-      var deleteTargets = [];
-
-      // Priority 1: non-favorite duplicate normal cards (keep 1)
-      allEntries.forEach(function (entry) {
-        var card = entry.card || entry;
-        var playerId = Number(card.id);
-        var normalCount = Number(entry.count) || 0;
-        if (!playerId || normalCount <= 1 || favIds.has(playerId)) {
-          return;
-        }
-        deleteTargets.push({
-          playerId: playerId,
-          isShiny: false,
-          isSigned: false,
-          quantity: normalCount - 1
-        });
-      });
-
-      // Priority 2: non-favorite common cards (delete entirely)
+      // Priority 1: non-favorite common cards (delete entirely)
+      var candidates = [];
       allEntries.forEach(function (entry) {
         var card = entry.card || entry;
         var playerId = Number(card.id);
@@ -226,27 +209,49 @@
         if (!playerId || rarity !== "common" || normalCount <= 0 || favIds.has(playerId)) {
           return;
         }
-        // If already targeted as duplicate, remaining count is 1 — delete that too
-        var existing = deleteTargets.find(function (t) { return t.playerId === playerId; });
-        var remainingCount = existing ? normalCount - existing.quantity : normalCount;
-        if (remainingCount <= 0) {
-          return;
-        }
-        if (existing) {
-          existing.quantity += remainingCount;
-        } else {
-          deleteTargets.push({
+        candidates.push({
+          playerId: playerId,
+          isShiny: false,
+          isSigned: false,
+          quantity: normalCount
+        });
+      });
+
+      // Priority 2 fallback: non-favorite duplicate normal cards of any rarity (keep 1)
+      if (candidates.length === 0) {
+        allEntries.forEach(function (entry) {
+          var card = entry.card || entry;
+          var playerId = Number(card.id);
+          var normalCount = Number(entry.count) || 0;
+          var duplicateCount = normalCount - 1;
+          if (!playerId || duplicateCount <= 0 || favIds.has(playerId)) {
+            return;
+          }
+          candidates.push({
             playerId: playerId,
             isShiny: false,
             isSigned: false,
-            quantity: remainingCount
+            quantity: duplicateCount
           });
-        }
-      });
+        });
+      }
 
-      if (deleteTargets.length === 0) {
-        state.lastAutoCleanAt = Date.now();
+      if (candidates.length === 0) {
         return { deletedCards: 0, deleteTargets: [] };
+      }
+
+      // Limit to BATCH_SIZE cards total
+      var deleteTargets = [];
+      var remaining = BATCH_SIZE;
+      for (var i = 0; i < candidates.length && remaining > 0; i++) {
+        var qty = Math.min(candidates[i].quantity, remaining);
+        deleteTargets.push({
+          playerId: candidates[i].playerId,
+          isShiny: false,
+          isSigned: false,
+          quantity: qty
+        });
+        remaining -= qty;
       }
 
       var totalDeleted = deleteTargets.reduce(function (sum, t) { return sum + t.quantity; }, 0);
@@ -275,8 +280,6 @@
       if (!deleteResponse.ok) {
         throw new Error(deleteResponse.error || "Auto-clean delete failed");
       }
-
-      state.lastAutoCleanAt = Date.now();
 
       // Invalidate cached collection data
       state.entriesByUserId = new Map();

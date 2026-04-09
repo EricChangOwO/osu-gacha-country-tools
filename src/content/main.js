@@ -287,10 +287,17 @@
       return;
     }
 
+    var prev = state.settings;
     state.settings = {
       ...DEFAULT_SETTINGS,
       ...(changes[SETTINGS_KEY].newValue || {})
     };
+
+    if (state.settings.autoCleanCollection !== prev.autoCleanCollection) {
+      state.autoCleanExhausted = false;
+      window.clearTimeout(state.autoCleanRetryTimerId);
+      state.autoCleanRetryTimerId = null;
+    }
 
     OGCT.syncAutoOpenPacks();
     queueApply();

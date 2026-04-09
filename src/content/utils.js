@@ -6,6 +6,8 @@ window.OGCT = (function () {
   const PROGRESS_TYPE = "ogct:collection-progress";
   const DELETE_REQUEST_TYPE = "ogct:delete-collection";
   const DELETE_RESPONSE_TYPE = "ogct:delete-collection-response";
+  const COLLECTION_FULL_TYPE = "ogct:collection-full";
+  const PACK_OPENED_TYPE = "ogct:pack-opened";
   const SETTINGS_KEY = "ogct-settings";
   const STALE_COLLECTION_REFRESH_COOLDOWN_MS = 3000;
   const DEFAULT_SETTINGS = {
@@ -41,9 +43,10 @@ window.OGCT = (function () {
     autoLoadedCollectionRoot: null,
     autoOpenPackIntervalId: null,
     lastStaleCollectionRefreshAt: 0,
-    lastAutoCleanAt: 0,
     isAutoCleanRunning: false,
-    pendingAutoCleanTimerId: null
+    autoCleanExhausted: false,
+    autoCleanRetryTimerId: null,
+    packEventListener: null
   };
 
   const regionNames = typeof Intl.DisplayNames === "function"
@@ -218,6 +221,8 @@ window.OGCT = (function () {
     PROGRESS_TYPE,
     DELETE_REQUEST_TYPE,
     DELETE_RESPONSE_TYPE,
+    COLLECTION_FULL_TYPE,
+    PACK_OPENED_TYPE,
     SETTINGS_KEY,
     STALE_COLLECTION_REFRESH_COOLDOWN_MS,
     DEFAULT_SETTINGS,
