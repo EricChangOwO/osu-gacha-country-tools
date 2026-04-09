@@ -4,7 +4,7 @@
 
 # osu!gacha Country Tools
 
-A Chrome extension for `gacha.miz.to` that adds country grouping, country filters, collection utilities, and an optional auto-open-packs toggle.
+A Chrome extension for `gacha.miz.to` that adds country grouping, country filters, favorites-aware sorting, collection cleanup tools, and optional pack-opening automation.
 
 </div>
 
@@ -22,11 +22,9 @@ A Chrome extension for `gacha.miz.to` that adds country grouping, country filter
 
 ## About The Project
 
-`gacha.miz.to` already exposes useful collection data such as country codes, rarity, follower count, and rank, but the default UI is limited when you want to browse your collection by country or quickly automate repetitive actions.
+`gacha.miz.to` already exposes useful collection data such as country codes, rarity, follower count, rank, and favorites, but the default UI is limited when you want to browse your collection by country, prioritize favorite players, or automate repetitive pack-opening and cleanup actions.
 
 This extension improves the site without replacing its existing UI. It keeps the original cards and controls intact, then layers additional tooling on top of the collection and pull pages.
-
-
 
 ## Preview
 
@@ -39,11 +37,15 @@ The screenshot below shows the collection page grouped by country, with the `TW 
 ## Features
 
 - Group collection cards by country inside the existing grid
-- Filter loaded cards by country
+- Filter loaded cards by country from a dropdown or quick country chips
 - Sort cards by rank, followers, rarity, or name
-- Automatically load all cards when the collection page opens
+- Push favorites to the top with a `Favorites first` toggle
+- Automatically load the full collection when the collection page opens
+- Show collection loading progress while additional pages are being fetched
 - Copy currently visible usernames
-- Popup menu with an `Auto Open Packs` toggle
+- Delete duplicate normal cards from the collection toolbar
+- Popup toggles for `Collection Tools`, `Auto Open Packs`, and `Auto Clean Collection`
+- Auto-clean non-favorite duplicate and common cards when the collection becomes full
 - Persistent settings via Chrome storage
 
 ### Built With
@@ -65,18 +67,17 @@ This project does not need a build step. You can load it directly as an unpacked
 
 ## Installation
 
-### Option 1: Download ZIP from GitHub
+### Option 1: Download the latest Release ZIP
 
 This is the easiest GitHub-based install flow for most users.
 
-1. Open the repository on GitHub.
-2. Click `Code`.
-3. Click `Download ZIP`.
-4. Extract the ZIP to a normal folder.
-5. Open `chrome://extensions/`.
-6. Enable `Developer mode`.
-7. Click `Load unpacked`.
-8. Select the extracted project folder.
+1. Open the [Releases](https://github.com/EricChangOwO/osu-gacha-country-tools/releases) page.
+2. Download the latest `osu-gacha-country-tools-*.zip` asset.
+3. Extract the ZIP to a normal folder.
+4. Open `chrome://extensions/`.
+5. Enable `Developer mode`.
+6. Click `Load unpacked`.
+7. Select the extracted project folder.
 
 Important:
 - You cannot install this directly from a `.zip` file.
@@ -90,52 +91,57 @@ git clone https://github.com/EricChangOwO/osu-gacha-country-tools.git
 
 Then load the cloned folder in `chrome://extensions/` with `Load unpacked`.
 
-### More convenient installation?
+### Option 3: Install from the Chrome Web Store
 
-If you want something easier than `Download ZIP` + `Extract` + `Load unpacked`, the real answer is:
+You can also install the published version from the Chrome Web Store:
 
-- Publish it to the Chrome Web Store
+- [osu!gacha Country Tools](https://chromewebstore.google.com/detail/osugacha-country-tools/kgdofhmjceoeadfjfgadmnckdielmnho)
 
-That is the only genuinely simpler install path for regular users. A packaged `.crx` file is possible, but it is usually more awkward and less reliable than either `Load unpacked` or the Chrome Web Store.
-
-For now, the best non-store flow is:
-
-- GitHub Release with a ZIP
-- User extracts it
-- User installs with `Load unpacked`
+Important:
+- Chrome Web Store releases may update more slowly than GitHub Releases, because new versions need to pass store review before they go live.
+- If you want the newest changes immediately, use the GitHub Release ZIP or clone the repository and load it unpacked.
 
 ## Usage
 
 ### Collection Page
 
+- Make sure `Collection Tools` is enabled in the extension popup.
 - Use the injected toolbar above the search box.
 - Opening the collection page automatically loads the full current collection view.
+- While more collection pages are loading, the toolbar shows loading progress instead of staying blank.
 - Toggle `Group by country` to insert country section headers into the existing grid.
 - Pick a country from the dropdown or quick chips.
 - Change sorting with `Rank`, `Followers`, `Rarity`, or `Name`.
+- Turn on `Favorites first` to keep favorite players ahead of the normal sort order.
 - Click `Copy visible names` to copy the usernames currently visible on screen.
+- Click `Delete duplicate normal cards` to remove duplicate normal cards directly from the collection page.
 
 ### Extension Popup
 
 - Click the extension icon in Chrome.
+- `Collection Tools` shows or hides the collection toolbar on the collection page.
 - Turn on `Auto Open Packs`.
 - On the pull page, the extension will check once per second for:
   - `Open Pack`
   - `Open Next Pack`
 - If the button exists and is enabled, it clicks it automatically.
+- Turn on `Auto Clean Collection` if you also want cleanup automation.
+- `Auto Clean Collection` requires `Auto Open Packs` and only runs after the site reports `collection_full`.
+- Auto-clean removes non-favorite duplicate cards first, then falls back to non-favorite common cards when needed.
 
 ### Notes
 
 - Country grouping uses the site's own collection data, not OCR or screenshot parsing.
+- Favorites-aware sorting uses the site's own favorites collection data.
 - The extension works against the current page view. If the site has not rendered a player into the DOM yet, the extension cannot visually place that card until the site loads it.
 - After editing extension files locally, reload the extension in `chrome://extensions/` before testing again.
 
 ## Roadmap
 
-- Add more popup toggles for pull-page automation
 - Add export options such as CSV or JSON
 - Add country stats summaries in the popup
 - Add optional favorites-only and rarity-only quick filters
+- Add safer review and dry-run options for cleanup actions
 
 ## License
 
