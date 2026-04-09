@@ -15,6 +15,7 @@ window.OGCT = (function () {
     groupByCountry: true,
     selectedCountry: "ALL",
     sortBy: "rank",
+    favoritesFirst: false,
     autoOpenPacks: false,
     autoCleanCollection: false
   };
@@ -30,6 +31,7 @@ window.OGCT = (function () {
   const state = {
     settings: { ...DEFAULT_SETTINGS },
     entriesByUserId: new Map(),
+    favoriteUserIds: new Set(),
     totalInstances: 0,
     totalUniquePlayers: 0,
     apiCountryCounts: new Map(),

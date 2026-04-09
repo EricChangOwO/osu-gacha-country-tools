@@ -81,7 +81,28 @@
   }
 
   function sortItems(items) {
-    return [...items].sort((left, right) => compareItems(left, right, state.settings.sortBy));
+    return [...items].sort((left, right) => {
+      return compareFavoritePriority(left, right) || compareItems(left, right, state.settings.sortBy);
+    });
+  }
+
+  function compareFavoritePriority(left, right) {
+    if (!state.settings.favoritesFirst) {
+      return 0;
+    }
+
+    const leftIsFavorite = state.favoriteUserIds.has(getItemUserId(left));
+    const rightIsFavorite = state.favoriteUserIds.has(getItemUserId(right));
+
+    if (leftIsFavorite === rightIsFavorite) {
+      return 0;
+    }
+
+    return leftIsFavorite ? -1 : 1;
+  }
+
+  function getItemUserId(item) {
+    return String(item.userId || (item.entry && item.entry.id) || "");
   }
 
   function compareItems(left, right, mode) {

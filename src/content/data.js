@@ -10,6 +10,10 @@
 
     const requestId = "req-" + Date.now() + "-" + Math.random().toString(36).slice(2);
     state.pendingRequestId = requestId;
+    const favoriteResponsePromise = fetchCollectionEntries("favorites").catch((error) => ({
+      ok: false,
+      error: error instanceof Error ? error.message : String(error)
+    }));
 
     const response = await new Promise((resolve, reject) => {
       let listener;
@@ -45,10 +49,28 @@
     const entries = Array.isArray(response.payload && response.payload.entries)
       ? response.payload.entries
       : [];
+    let favoriteEntries = [];
+
+    try {
+      const favoriteResponse = await favoriteResponsePromise;
+      if (!favoriteResponse.ok) {
+        throw new Error(favoriteResponse.error || "Favorites collection data request failed");
+      }
+
+      favoriteEntries = Array.isArray(favoriteResponse.payload && favoriteResponse.payload.entries)
+        ? favoriteResponse.payload.entries
+        : [];
+    } catch (error) {
+      console.warn("[ogct] Failed to load favorites for sorting", error);
+    }
 
     state.entriesByUserId = new Map(entries.map((entry) => {
       const normalized = entry.card ? { ...entry.card, count: entry.count, shinyCount: entry.shinyCount } : entry;
       return [String(normalized.id), normalized];
+    }));
+    state.favoriteUserIds = new Set(favoriteEntries.map((entry) => {
+      const favoriteEntry = entry.card ? entry.card : entry;
+      return String(favoriteEntry.id);
     }));
     state.totalInstances = entries.length;
     state.totalUniquePlayers = state.entriesByUserId.size;
@@ -132,11 +154,7 @@
       throw new Error(response.error || "Delete request failed");
     }
 
-    state.entriesByUserId = new Map();
-    state.totalInstances = 0;
-    state.totalUniquePlayers = 0;
-    state.apiCountryCounts = new Map();
-    state.lastStaleCollectionRefreshAt = 0;
+    resetCollectionState();
 
     return {
       deleteTargets,
@@ -282,16 +300,21 @@
       }
 
       // Invalidate cached collection data
-      state.entriesByUserId = new Map();
-      state.totalInstances = 0;
-      state.totalUniquePlayers = 0;
-      state.apiCountryCounts = new Map();
-      state.lastStaleCollectionRefreshAt = 0;
+      resetCollectionState();
 
       return { deletedCards: totalDeleted, deleteTargets: deleteTargets };
     } finally {
       state.isAutoCleanRunning = false;
     }
+  }
+
+  function resetCollectionState() {
+    state.entriesByUserId = new Map();
+    state.favoriteUserIds = new Set();
+    state.totalInstances = 0;
+    state.totalUniquePlayers = 0;
+    state.apiCountryCounts = new Map();
+    state.lastStaleCollectionRefreshAt = 0;
   }
 
   OGCT.ensureCollectionData = ensureCollectionData;

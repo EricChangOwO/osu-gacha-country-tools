@@ -1,44 +1,27 @@
 (function (OGCT) {
   const { ROOT_ID, state, saveSettings, collectGridItems, countCountries,
           isCountryMatch, formatCountryName } = OGCT;
+  const TOOLBAR_STRUCTURE_VERSION = "2";
+  const REQUIRED_CONTROLS = [
+    "group-toggle",
+    "country-select",
+    "sort-select",
+    "favorites-first-toggle",
+    "copy-visible",
+    "delete-duplicates",
+    "summary",
+    "chip-list"
+  ];
 
   function mountToolbar(elements) {
     let root = document.getElementById(ROOT_ID);
     if (!root) {
       root = document.createElement("section");
       root.id = ROOT_ID;
-      // Static toolbar HTML — no user input is interpolated
-      root.innerHTML = [
-        '<div class="ogct-panel">',
-        '  <div class="ogct-row">',
-        '    <span class="ogct-label">Country Tools</span>',
-        '    <label class="ogct-toggle">',
-        '      <input type="checkbox" data-ogct-control="group-toggle">',
-        "      <span>Group by country</span>",
-        "    </label>",
-        '    <label class="ogct-inline">',
-        '      <span class="ogct-label">Country</span>',
-        '      <select class="ogct-select" data-ogct-control="country-select"></select>',
-        "    </label>",
-        '    <label class="ogct-inline">',
-        '      <span class="ogct-label">Sort</span>',
-        '      <select class="ogct-select" data-ogct-control="sort-select">',
-        '        <option value="rank">Rank</option>',
-        '        <option value="followers">Followers</option>',
-        '        <option value="rarity">Rarity</option>',
-        '        <option value="name">Name</option>',
-        "      </select>",
-        "    </label>",
-        '    <button class="ogct-button" type="button" data-kind="ghost" data-ogct-control="copy-visible">Copy visible names</button>',
-        '    <button class="ogct-button" type="button" data-kind="danger" data-ogct-control="delete-duplicates">Delete duplicate normal cards</button>',
-        "  </div>",
-        '  <div class="ogct-row ogct-summary" data-ogct-control="summary"></div>',
-        '  <div class="ogct-row ogct-chip-list" data-ogct-control="chip-list"></div>',
-        "</div>"
-      ].join("");
-
-      attachToolbarEvents(root);
     }
+
+    ensureToolbarStructure(root);
+    attachToolbarEvents(root);
 
     if (root.parentElement !== elements.toolbarHost) {
       elements.searchRow.before(root);
@@ -47,12 +30,71 @@
     root.dataset.totalUniquePlayers = String(state.totalUniquePlayers);
   }
 
+  function getToolbarMarkup() {
+    // Static toolbar HTML - no user input is interpolated
+    return [
+      '<div class="ogct-panel">',
+      '  <div class="ogct-row">',
+      '    <span class="ogct-label">Country Tools</span>',
+      '    <label class="ogct-toggle">',
+      '      <input type="checkbox" data-ogct-control="group-toggle">',
+      "      <span>Group by country</span>",
+      "    </label>",
+      '    <label class="ogct-inline">',
+      '      <span class="ogct-label">Country</span>',
+      '      <select class="ogct-select" data-ogct-control="country-select"></select>',
+      "    </label>",
+      '    <label class="ogct-inline">',
+      '      <span class="ogct-label">Sort</span>',
+      '      <select class="ogct-select" data-ogct-control="sort-select">',
+      '        <option value="rank">Rank</option>',
+      '        <option value="followers">Followers</option>',
+      '        <option value="rarity">Rarity</option>',
+      '        <option value="name">Name</option>',
+      "      </select>",
+      "    </label>",
+      '    <label class="ogct-toggle">',
+      '      <input type="checkbox" data-ogct-control="favorites-first-toggle">',
+      "      <span>Favorites first</span>",
+      "    </label>",
+      '    <button class="ogct-button" type="button" data-kind="ghost" data-ogct-control="copy-visible">Copy visible names</button>',
+      '    <button class="ogct-button" type="button" data-kind="danger" data-ogct-control="delete-duplicates">Delete duplicate normal cards</button>',
+      "  </div>",
+      '  <div class="ogct-row ogct-summary" data-ogct-control="summary"></div>',
+      '  <div class="ogct-row ogct-chip-list" data-ogct-control="chip-list"></div>',
+      "</div>"
+    ].join("");
+  }
+
+  function ensureToolbarStructure(root) {
+    const hasAllControls = REQUIRED_CONTROLS.every((control) => (
+      !!root.querySelector('[data-ogct-control="' + control + '"]')
+    ));
+
+    if (root.dataset.ogctStructureVersion === TOOLBAR_STRUCTURE_VERSION && hasAllControls) {
+      return;
+    }
+
+    root.innerHTML = getToolbarMarkup();
+    root.dataset.ogctStructureVersion = TOOLBAR_STRUCTURE_VERSION;
+    delete root.dataset.ogctEventsBound;
+  }
+
   function attachToolbarEvents(root) {
+    if (root.dataset.ogctEventsBound === "1") {
+      return;
+    }
+
     const groupToggle = root.querySelector('[data-ogct-control="group-toggle"]');
     const countrySelect = root.querySelector('[data-ogct-control="country-select"]');
     const sortSelect = root.querySelector('[data-ogct-control="sort-select"]');
+    const favoritesFirstToggle = root.querySelector('[data-ogct-control="favorites-first-toggle"]');
     const copyButton = root.querySelector('[data-ogct-control="copy-visible"]');
     const deleteDuplicatesButton = root.querySelector('[data-ogct-control="delete-duplicates"]');
+
+    if (!groupToggle || !countrySelect || !sortSelect || !favoritesFirstToggle || !copyButton || !deleteDuplicatesButton) {
+      return;
+    }
 
     groupToggle.addEventListener("change", async () => {
       state.settings.groupByCountry = groupToggle.checked;
@@ -72,6 +114,12 @@
       OGCT.queueApply();
     });
 
+    favoritesFirstToggle.addEventListener("change", async () => {
+      state.settings.favoritesFirst = favoritesFirstToggle.checked;
+      await saveSettings();
+      OGCT.queueApply();
+    });
+
     copyButton.addEventListener("click", async () => {
       await copyVisibleNames();
     });
@@ -79,6 +127,8 @@
     deleteDuplicatesButton.addEventListener("click", async () => {
       await deleteDuplicateNormalCards(deleteDuplicatesButton);
     });
+
+    root.dataset.ogctEventsBound = "1";
   }
 
   function syncToolbarOptions(elements) {
@@ -86,6 +136,9 @@
     if (!root) {
       return;
     }
+
+    ensureToolbarStructure(root);
+    attachToolbarEvents(root);
 
     const allItems = collectGridItems(elements.grid);
     const countryCounts = countCountries(allItems);
@@ -102,11 +155,13 @@
     const groupToggle = root.querySelector('[data-ogct-control="group-toggle"]');
     const countrySelect = root.querySelector('[data-ogct-control="country-select"]');
     const sortSelect = root.querySelector('[data-ogct-control="sort-select"]');
+    const favoritesFirstToggle = root.querySelector('[data-ogct-control="favorites-first-toggle"]');
     const deleteDuplicatesButton = root.querySelector('[data-ogct-control="delete-duplicates"]');
     const duplicatePlan = getDuplicateNormalDeletePlan();
 
     groupToggle.checked = state.settings.groupByCountry;
     sortSelect.value = state.settings.sortBy;
+    favoritesFirstToggle.checked = !!state.settings.favoritesFirst;
     deleteDuplicatesButton.disabled = state.isDeletingDuplicates || duplicatePlan.deletedCards === 0;
     deleteDuplicatesButton.textContent = state.isDeletingDuplicates
       ? "Deleting..."
