@@ -1,8 +1,6 @@
 const SETTINGS_KEY = "ogct-settings";
 const DEFAULT_SETTINGS = {
   collectionToolsEnabled: true,
-  groupByCountry: true,
-  selectedCountry: "ALL",
   sortBy: "rank",
   autoOpenPacks: false,
   autoCleanCollection: false

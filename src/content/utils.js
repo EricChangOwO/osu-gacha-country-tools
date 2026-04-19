@@ -12,8 +12,6 @@ window.OGCT = (function () {
   const STALE_COLLECTION_REFRESH_COOLDOWN_MS = 3000;
   const DEFAULT_SETTINGS = {
     collectionToolsEnabled: true,
-    groupByCountry: true,
-    selectedCountry: "ALL",
     sortBy: "rank",
     favoritesFirst: false,
     autoOpenPacks: false,
@@ -34,7 +32,6 @@ window.OGCT = (function () {
     favoriteUserIds: new Set(),
     totalInstances: 0,
     totalUniquePlayers: 0,
-    apiCountryCounts: new Map(),
     bridgeInjected: false,
     pendingRequestId: null,
     applyTimer: null,
@@ -51,10 +48,6 @@ window.OGCT = (function () {
     packEventListener: null
   };
 
-  const regionNames = typeof Intl.DisplayNames === "function"
-    ? new Intl.DisplayNames(["en"], { type: "region" })
-    : null;
-
   function escapeHtml(value) {
     return value
       .replaceAll("&", "&amp;")
@@ -62,15 +55,6 @@ window.OGCT = (function () {
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#39;");
-  }
-
-  function formatCountryName(code) {
-    if (!code || code === "??") {
-      return "Unknown";
-    }
-
-    const displayName = regionNames ? regionNames.of(code) : null;
-    return displayName ? code + " \u00b7 " + displayName : code;
   }
 
   function getUserId(url) {
@@ -217,22 +201,6 @@ window.OGCT = (function () {
     ));
   }
 
-  function countCountries(items) {
-    return items.reduce((counts, item) => {
-      const code = item.entry && item.entry.countryCode ? item.entry.countryCode : "??";
-      counts.set(code, (counts.get(code) || 0) + 1);
-      return counts;
-    }, new Map());
-  }
-
-  function isCountryMatch(item, selectedCountry) {
-    if (selectedCountry === "ALL") {
-      return true;
-    }
-
-    return item.entry && item.entry.countryCode === selectedCountry;
-  }
-
   function clearGeneratedNodes(grid) {
     Array.from(grid.querySelectorAll("[" + GENERATED_ATTR + "]")).forEach((node) => node.remove());
   }
@@ -253,7 +221,6 @@ window.OGCT = (function () {
     RARITY_ORDER,
     state,
     escapeHtml,
-    formatCountryName,
     getUserId,
     extractUsername,
     isGeneratedNode,
@@ -263,8 +230,6 @@ window.OGCT = (function () {
     findElements,
     collectGridItems,
     getMissingCollectionUserIds,
-    countCountries,
-    isCountryMatch,
     clearGeneratedNodes,
     queueApply: null
   };

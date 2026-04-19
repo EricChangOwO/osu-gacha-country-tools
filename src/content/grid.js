@@ -1,6 +1,5 @@
 (function (OGCT) {
-  const { GENERATED_ATTR, RARITY_ORDER, state, collectGridItems, clearGeneratedNodes,
-          isCountryMatch, formatCountryName } = OGCT;
+  const { GENERATED_ATTR, RARITY_ORDER, state, collectGridItems, clearGeneratedNodes } = OGCT;
 
   function decorateGrid(elements) {
     const allItems = collectGridItems(elements.grid);
@@ -12,66 +11,10 @@
 
     allItems.forEach((item) => {
       item.wrapper.classList.add("ogct-card-visible");
-      item.wrapper.classList.toggle("ogct-hidden", !isCountryMatch(item, state.settings.selectedCountry));
       item.wrapper.style.order = "";
     });
 
-    const visibleItems = allItems.filter((item) => !item.wrapper.classList.contains("ogct-hidden"));
-    if (visibleItems.length === 0) {
-      const emptyState = document.createElement("div");
-      emptyState.className = "ogct-empty";
-      emptyState.setAttribute(GENERATED_ATTR, "empty");
-      emptyState.textContent = "No loaded cards match the selected country in the current site view.";
-      elements.grid.appendChild(emptyState);
-      return;
-    }
-
-    if (state.settings.groupByCountry) {
-      applyGroupedLayout(elements.grid, visibleItems);
-      return;
-    }
-
-    applyFlatOrder(visibleItems);
-  }
-
-  function applyGroupedLayout(grid, items) {
-    const groups = new Map();
-
-    items.forEach((item) => {
-      const code = item.entry && item.entry.countryCode ? item.entry.countryCode : "??";
-      if (!groups.has(code)) {
-        groups.set(code, []);
-      }
-      groups.get(code).push(item);
-    });
-
-    const orderedGroups = Array.from(groups.entries()).sort((left, right) => {
-      const countDelta = right[1].length - left[1].length;
-      return countDelta || formatCountryName(left[0]).localeCompare(formatCountryName(right[0]));
-    });
-
-    let order = 0;
-    orderedGroups.forEach(([code, groupItems]) => {
-      const header = document.createElement("div");
-      header.className = "ogct-country-header";
-      header.setAttribute(GENERATED_ATTR, "header");
-      header.style.order = String(order++);
-
-      const title = document.createElement("div");
-      title.className = "ogct-country-title";
-      title.textContent = formatCountryName(code);
-
-      const meta = document.createElement("div");
-      meta.className = "ogct-country-meta";
-      meta.textContent = groupItems.length + " cards";
-
-      header.append(title, meta);
-      grid.appendChild(header);
-
-      sortItems(groupItems).forEach((item) => {
-        item.wrapper.style.order = String(order++);
-      });
-    });
+    applyFlatOrder(allItems);
   }
 
   function applyFlatOrder(items) {

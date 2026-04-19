@@ -1,6 +1,6 @@
 (function (OGCT) {
   const { state, REQUEST_TYPE, RESPONSE_TYPE, DELETE_REQUEST_TYPE, DELETE_RESPONSE_TYPE,
-          countCountries, getMissingCollectionUserIds,
+          getMissingCollectionUserIds,
           STALE_COLLECTION_REFRESH_COOLDOWN_MS } = OGCT;
 
   async function ensureCollectionData(force) {
@@ -74,9 +74,6 @@
     }));
     state.totalInstances = entries.length;
     state.totalUniquePlayers = state.entriesByUserId.size;
-    state.apiCountryCounts = countCountries(
-      Array.from(state.entriesByUserId.values()).map((entry) => ({ entry }))
-    );
   }
 
   async function refreshCollectionDataIfStale(grid) {
@@ -313,7 +310,6 @@
     state.favoriteUserIds = new Set();
     state.totalInstances = 0;
     state.totalUniquePlayers = 0;
-    state.apiCountryCounts = new Map();
     state.lastStaleCollectionRefreshAt = 0;
   }
 

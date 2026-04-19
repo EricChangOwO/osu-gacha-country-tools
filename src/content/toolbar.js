@@ -1,16 +1,12 @@
 (function (OGCT) {
-  const { ROOT_ID, state, saveSettings, collectGridItems, countCountries,
-          isCountryMatch, formatCountryName } = OGCT;
-  const TOOLBAR_STRUCTURE_VERSION = "2";
+  const { ROOT_ID, state, saveSettings, collectGridItems } = OGCT;
+  const TOOLBAR_STRUCTURE_VERSION = "3";
   const REQUIRED_CONTROLS = [
-    "group-toggle",
-    "country-select",
     "sort-select",
     "favorites-first-toggle",
     "copy-visible",
     "delete-duplicates",
-    "summary",
-    "chip-list"
+    "summary"
   ];
 
   function mountToolbar(elements) {
@@ -31,19 +27,10 @@
   }
 
   function getToolbarMarkup() {
-    // Static toolbar HTML - no user input is interpolated
     return [
       '<div class="ogct-panel">',
       '  <div class="ogct-row">',
-      '    <span class="ogct-label">Country Tools</span>',
-      '    <label class="ogct-toggle">',
-      '      <input type="checkbox" data-ogct-control="group-toggle">',
-      "      <span>Group by country</span>",
-      "    </label>",
-      '    <label class="ogct-inline">',
-      '      <span class="ogct-label">Country</span>',
-      '      <select class="ogct-select" data-ogct-control="country-select"></select>',
-      "    </label>",
+      '    <span class="ogct-label">Collection Tools</span>',
       '    <label class="ogct-inline">',
       '      <span class="ogct-label">Sort</span>',
       '      <select class="ogct-select" data-ogct-control="sort-select">',
@@ -61,7 +48,6 @@
       '    <button class="ogct-button" type="button" data-kind="danger" data-ogct-control="delete-duplicates">Delete duplicate normal cards</button>',
       "  </div>",
       '  <div class="ogct-row ogct-summary" data-ogct-control="summary"></div>',
-      '  <div class="ogct-row ogct-chip-list" data-ogct-control="chip-list"></div>',
       "</div>"
     ].join("");
   }
@@ -85,28 +71,14 @@
       return;
     }
 
-    const groupToggle = root.querySelector('[data-ogct-control="group-toggle"]');
-    const countrySelect = root.querySelector('[data-ogct-control="country-select"]');
     const sortSelect = root.querySelector('[data-ogct-control="sort-select"]');
     const favoritesFirstToggle = root.querySelector('[data-ogct-control="favorites-first-toggle"]');
     const copyButton = root.querySelector('[data-ogct-control="copy-visible"]');
     const deleteDuplicatesButton = root.querySelector('[data-ogct-control="delete-duplicates"]');
 
-    if (!groupToggle || !countrySelect || !sortSelect || !favoritesFirstToggle || !copyButton || !deleteDuplicatesButton) {
+    if (!sortSelect || !favoritesFirstToggle || !copyButton || !deleteDuplicatesButton) {
       return;
     }
-
-    groupToggle.addEventListener("change", async () => {
-      state.settings.groupByCountry = groupToggle.checked;
-      await saveSettings();
-      OGCT.queueApply();
-    });
-
-    countrySelect.addEventListener("change", async () => {
-      state.settings.selectedCountry = countrySelect.value;
-      await saveSettings();
-      OGCT.queueApply();
-    });
 
     sortSelect.addEventListener("change", async () => {
       state.settings.sortBy = sortSelect.value;
@@ -141,25 +113,11 @@
     attachToolbarEvents(root);
 
     const allItems = collectGridItems(elements.grid);
-    const countryCounts = countCountries(allItems);
-    const availableCodes = Array.from(countryCounts.keys()).sort((left, right) => {
-      const countDelta = (countryCounts.get(right) || 0) - (countryCounts.get(left) || 0);
-      return countDelta || formatCountryName(left).localeCompare(formatCountryName(right));
-    });
-
-    if (state.settings.selectedCountry !== "ALL" && !countryCounts.has(state.settings.selectedCountry)) {
-      state.settings.selectedCountry = "ALL";
-      saveSettings();
-    }
-
-    const groupToggle = root.querySelector('[data-ogct-control="group-toggle"]');
-    const countrySelect = root.querySelector('[data-ogct-control="country-select"]');
     const sortSelect = root.querySelector('[data-ogct-control="sort-select"]');
     const favoritesFirstToggle = root.querySelector('[data-ogct-control="favorites-first-toggle"]');
     const deleteDuplicatesButton = root.querySelector('[data-ogct-control="delete-duplicates"]');
     const duplicatePlan = getDuplicateNormalDeletePlan();
 
-    groupToggle.checked = state.settings.groupByCountry;
     sortSelect.value = state.settings.sortBy;
     favoritesFirstToggle.checked = !!state.settings.favoritesFirst;
     deleteDuplicatesButton.disabled = state.isDeletingDuplicates || duplicatePlan.deletedCards === 0;
@@ -171,91 +129,18 @@
           : "No duplicate normal cards"
       );
 
-    const currentValue = state.settings.selectedCountry;
-    const options = [
-      { value: "ALL", label: "All loaded countries" }
-    ].concat(
-      availableCodes.map((code) => ({
-        value: code,
-        label: formatCountryName(code) + " (" + (countryCounts.get(code) || 0) + ")"
-      }))
-    );
-
-    countrySelect.replaceChildren(...options.map((option) => {
-      const element = document.createElement("option");
-      element.value = option.value;
-      element.textContent = option.label;
-      return element;
-    }));
-    countrySelect.value = currentValue;
-
-    renderChips(root, availableCodes, countryCounts);
-    renderSummary(root, allItems, countryCounts);
+    renderSummary(root, allItems);
   }
 
-  function renderChips(root, availableCodes, countryCounts) {
-    const chipList = root.querySelector('[data-ogct-control="chip-list"]');
-    const chipStates = [{
-      code: "ALL",
-      label: "All",
-      active: state.settings.selectedCountry === "ALL"
-    }].concat(
-      availableCodes.slice(0, 12).map((code) => ({
-        code,
-        label: code + " " + (countryCounts.get(code) || 0),
-        active: state.settings.selectedCountry === code
-      }))
-    );
-    const nextSignature = JSON.stringify(chipStates);
-
-    if (chipList.dataset.signature === nextSignature) {
-      return;
-    }
-
-    chipList.replaceChildren(...chipStates.map((chipState) => createChip(chipState)));
-    chipList.dataset.signature = nextSignature;
-  }
-
-  function createChip({ label, code, active }) {
-    const chip = document.createElement("button");
-    chip.type = "button";
-    chip.className = "ogct-chip";
-    chip.textContent = label;
-    chip.classList.toggle("is-active", active);
-    chip.addEventListener("click", async () => {
-      state.settings.selectedCountry = code;
-      await saveSettings();
-      OGCT.queueApply();
-    });
-    return chip;
-  }
-
-  // Summary HTML is built from internal state and escaped API data only — no raw user input
-  function renderSummary(root, allItems, countryCounts) {
+  function renderSummary(root, allItems) {
     const summary = root.querySelector('[data-ogct-control="summary"]');
-    const visibleItems = allItems.filter((item) => isCountryMatch(item, state.settings.selectedCountry));
-    const loadedUserIds = new Set(allItems.map((item) => item.userId).filter(Boolean));
-    const selectedLabel = state.settings.selectedCountry === "ALL"
-      ? "all loaded countries"
-      : formatCountryName(state.settings.selectedCountry);
 
     const notes = [
-      "<strong>" + visibleItems.length + "</strong> visible card" + (visibleItems.length === 1 ? "" : "s"),
-      "in <strong>" + selectedLabel + "</strong>",
-      "from <strong>" + allItems.length + "</strong> loaded card" + (allItems.length === 1 ? "" : "s"),
-      "across <strong>" + countryCounts.size + "</strong> loaded countr" + (countryCounts.size === 1 ? "y" : "ies")
+      "<strong>" + allItems.length + "</strong> loaded card" + (allItems.length === 1 ? "" : "s")
     ];
 
     if (state.totalUniquePlayers > allItems.length) {
-      const selectedApiCount = state.settings.selectedCountry === "ALL"
-        ? state.totalUniquePlayers
-        : (state.apiCountryCounts.get(state.settings.selectedCountry) || 0);
-      const selectedMissingCount = Math.max(selectedApiCount - visibleItems.length, 0);
-      const totalMissingCount = Math.max(state.totalUniquePlayers - loadedUserIds.size, 0);
-      const missingCount = state.settings.selectedCountry === "ALL"
-        ? totalMissingCount
-        : selectedMissingCount;
-
+      const missingCount = Math.max(state.totalUniquePlayers - allItems.length, 0);
       if (missingCount > 0) {
         notes.push(
           "<strong>" + missingCount + "</strong> API player" + (missingCount === 1 ? "" : "s") +
@@ -318,7 +203,6 @@
     }
 
     const visibleItems = collectGridItems(elements.grid)
-      .filter((item) => isCountryMatch(item, state.settings.selectedCountry))
       .map((item) => item.username)
       .filter(Boolean);
 
