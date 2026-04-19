@@ -11,7 +11,6 @@ window.OGCT = (function () {
   const SETTINGS_KEY = "ogct-settings";
   const STALE_COLLECTION_REFRESH_COOLDOWN_MS = 3000;
   const DEFAULT_SETTINGS = {
-    collectionToolsEnabled: true,
     sortBy: "rank",
     favoritesFirst: false,
     autoOpenPacks: false,

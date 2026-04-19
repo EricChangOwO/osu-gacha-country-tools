@@ -1,12 +1,10 @@
 const SETTINGS_KEY = "ogct-settings";
 const DEFAULT_SETTINGS = {
-  collectionToolsEnabled: true,
   sortBy: "rank",
   autoOpenPacks: false,
   autoCleanCollection: false
 };
 
-const collectionToolsEnabledInput = document.getElementById("collectionToolsEnabled");
 const autoOpenPacksInput = document.getElementById("autoOpenPacks");
 const autoCleanCollectionInput = document.getElementById("autoCleanCollection");
 const statusElement = document.getElementById("status");
@@ -18,24 +16,9 @@ initialize().catch((error) => {
 
 async function initialize() {
   const settings = await loadSettings();
-  collectionToolsEnabledInput.checked = settings.collectionToolsEnabled;
   autoOpenPacksInput.checked = settings.autoOpenPacks;
   autoCleanCollectionInput.checked = settings.autoCleanCollection;
   renderStatus(settings);
-
-  collectionToolsEnabledInput.addEventListener("change", async () => {
-    const nextSettings = {
-      ...settings,
-      collectionToolsEnabled: collectionToolsEnabledInput.checked
-    };
-
-    await chrome.storage.local.set({
-      [SETTINGS_KEY]: nextSettings
-    });
-
-    settings.collectionToolsEnabled = nextSettings.collectionToolsEnabled;
-    renderStatus(settings);
-  });
 
   autoOpenPacksInput.addEventListener("change", async () => {
     const nextSettings = {
@@ -79,15 +62,5 @@ function setStatus(message) {
 }
 
 function renderStatus(settings) {
-  if (!settings.collectionToolsEnabled && settings.autoOpenPacks) {
-    setStatus("Collection tools are disabled. Auto Open Packs stays enabled.");
-    return;
-  }
-
-  if (!settings.collectionToolsEnabled) {
-    setStatus("Collection tools are disabled.");
-    return;
-  }
-
-  setStatus(settings.autoOpenPacks ? "Collection tools and Auto Open Packs are enabled." : "Collection tools are enabled.");
+  setStatus(settings.autoOpenPacks ? "Auto Open Packs is enabled." : "Ready.");
 }

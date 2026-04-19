@@ -128,11 +128,6 @@
       return;
     }
 
-    if (!state.settings.collectionToolsEnabled) {
-      resetCollectionEnhancements(elements);
-      return;
-    }
-
     state.isApplying = true;
 
     try {
